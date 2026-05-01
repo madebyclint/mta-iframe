@@ -16,7 +16,7 @@
   --row-bd: rgba(255,255,255,0.09);
 
   --dest-font: 22px;
-  --dir-font: 11px;
+  --dir-font-max: 11px;
   --chip-font: 18px;
   --chip-h: 38px;
   --chip-w: 80px;
@@ -106,7 +106,7 @@ html, body {
   gap: 3px;
 }
 .dest-dir {
-  font-size: var(--dir-font);
+  font-size: clamp(10px, 1.1vw + 6px, var(--dir-font-max));
   font-weight: 800;
   color: var(--t3);
   letter-spacing: 1.2px;
@@ -255,12 +255,12 @@ html, body {
 <body>
 
 <div class="board">
-  <div class="sec-label">Subway · Crown Hts–Utica Av &amp; Utica Av (A/C)</div>
+  <div class="sec-label">Subway · Utica Av (A/C) · Near 1485 Prospect Pl</div>
   <div id="subway-rows"></div>
 
   <div class="section-gap"></div>
 
-  <div class="sec-label">Bus · Buffalo Av · St Johns Pl · Eastern Pkwy</div>
+  <div class="sec-label">Bus · B15 + B46 · Prospect Pl</div>
   <div id="bus-rows"></div>
 
   <div class="status">
@@ -315,15 +315,30 @@ html, body {
 
 <script>
 const REFRESH_SEC = 30;
+const DEFAULT_API_BASE = 'https://mta-iframe-production.up.railway.app';
 
 const SUBWAY_STOPS = [
-  { id: "232N", dir: "Uptown", dest: "Manhattan" },
-  { id: "232S", dir: "Downtown", dest: "New Lots / Flatbush" },
   { id: "A27N", dir: "Uptown", dest: "Manhattan / Inwood" },
   { id: "A27S", dir: "Downtown", dest: "Far Rockaway / Lefferts" },
 ];
 
-const BUS_STOPS = ["308394", "305720", "308207"];
+const BUS_STOPS = [
+  { code: '303676', dir: 'Southbound' },
+  { code: '307093', dir: 'Northbound' },
+  { code: '301117', dir: 'Eastbound' },
+  { code: '306343', dir: 'Westbound' },
+];
+
+const BUS_ROUTES = new Set(['B15', 'B46']);
+
+const apiBaseParam = new URLSearchParams(window.location.search).get('apiBase');
+const API_BASE = apiBaseParam || (
+  window.location.hostname === 'localhost' ||
+  window.location.hostname === '127.0.0.1' ||
+  window.location.origin === DEFAULT_API_BASE
+    ? ''
+    : DEFAULT_API_BASE
+);
 
 const LINE_COLORS = {
   "1": { bg: "#EE352E", fg: "#fff" }, "2": { bg: "#EE352E", fg: "#fff" }, "3": { bg: "#EE352E", fg: "#fff" },
@@ -373,11 +388,11 @@ function subwayRow(route, dir, dest, times) {
   </div>`;
 }
 
-function busRow(route, dest, times) {
+function busRow(route, dir, dest, times) {
   return `<div class="row">
     <div class="bus-badge">${route}</div>
     <div class="dest">
-      <div class="dest-dir">Local Bus</div>
+      <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
     ${chipsCol(times.map(fmt))}
@@ -386,15 +401,19 @@ function busRow(route, dest, times) {
 
 async function getSubway() {
   const ids = SUBWAY_STOPS.map(stop => stop.id).join(',');
-  const response = await fetch(`/api/subway?ids=${ids}`);
+  const routes = ['A', 'C'].join(',');
+  const response = await fetch(`${API_BASE}/api/subway?ids=${ids}&routes=${routes}`);
   if (!response.ok) throw new Error(`subway ${response.status}`);
   return response.json();
 }
 
-async function getBus(code) {
-  const response = await fetch(`/api/bus/${code}`);
+async function getBus(stop) {
+  const response = await fetch(`${API_BASE}/api/bus/${stop.code}`);
   if (!response.ok) throw new Error(`bus ${response.status}`);
-  return response.json();
+  return {
+    direction: stop.dir,
+    data: await response.json(),
+  };
 }
 
 function renderSubway(data) {
@@ -440,11 +459,13 @@ function renderBus(allData) {
   const now = Date.now();
   const buckets = {};
 
-  allData.forEach(data => {
-    const visits = data?.Siri?.ServiceDelivery?.StopMonitoringDelivery?.[0]?.MonitoredStopVisit || [];
+  allData.forEach(entry => {
+    const visits = entry?.data?.Siri?.ServiceDelivery?.StopMonitoringDelivery?.[0]?.MonitoredStopVisit || [];
     visits.forEach(visit => {
       const journey = visit.MonitoredVehicleJourney;
       const route = (journey?.PublishedLineName || journey?.LineRef || '?').replace(/^MTA[^_]*_/, '');
+      if (!BUS_ROUTES.has(route)) return;
+
       const dest = journey?.DestinationName || 'In service';
       const rawTime = journey?.MonitoredCall?.ExpectedArrivalTime || journey?.MonitoredCall?.AimedArrivalTime;
       if (!rawTime) return;
@@ -452,18 +473,19 @@ function renderBus(allData) {
       const delta = (new Date(rawTime) - now) / 1000;
       if (delta < -30 || delta > 3600) return;
 
-      if (!buckets[route]) buckets[route] = { route, dest, times: [] };
-      buckets[route].times.push(delta);
+      const key = `${route}:${entry.direction}:${dest}`;
+      if (!buckets[key]) buckets[key] = { route, dir: entry.direction, dest, times: [] };
+      buckets[key].times.push(delta);
     });
   });
 
   Object.values(buckets).forEach(bucket => bucket.times.sort((a, b) => a - b));
   const rows = Object.values(buckets)
     .sort((a, b) => (a.times[0] || 9999) - (b.times[0] || 9999))
-    .slice(0, 6);
+    .slice(0, 4);
 
   busRowsEl.innerHTML = rows.length
-    ? rows.map(row => busRow(row.route, row.dest, row.times)).join('')
+    ? rows.map(row => busRow(row.route, row.dir, row.dest, row.times)).join('')
     : '<div class="empty">No buses scheduled</div>';
 }
 
@@ -490,7 +512,7 @@ async function refresh() {
   try {
     const [subwayData, ...busResults] = await Promise.all([
       getSubway(),
-      ...BUS_STOPS.map(code => getBus(code).catch(() => null)),
+      ...BUS_STOPS.map(stop => getBus(stop).catch(() => null)),
     ]);
 
     lastSubwayData = subwayData;
@@ -528,7 +550,7 @@ function applyTweaks(nextTweaks) {
   const size = nextTweaks.textSize || 22;
 
   rootStyle.setProperty('--dest-font', `${size}px`);
-  rootStyle.setProperty('--dir-font', `${Math.max(10, Math.round(size * 0.52))}px`);
+  rootStyle.setProperty('--dir-font-max', `${Math.max(10, Math.round(size * 0.52))}px`);
   rootStyle.setProperty('--chip-font', `${Math.round(size * 0.82)}px`);
   rootStyle.setProperty('--chip-h', `${Math.round(size * 1.75)}px`);
   rootStyle.setProperty('--chip-w', `${Math.round(size * 3.7)}px`);

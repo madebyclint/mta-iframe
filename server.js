@@ -7,6 +7,20 @@ const app         = express();
 const PORT        = process.env.PORT || 3000;
 const BUS_API_KEY = process.env.BUS_API_KEY || '';
 
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(204);
+    }
+  }
+
+  next();
+});
+
 // GTFS-RT feed URLs keyed by the lines they carry
 const GTFS_FEEDS = {
   '123456S': 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/nyct%2Fgtfs',
@@ -47,14 +61,20 @@ app.get('/', (_req, res) => {
 // return a simple JSON structure the front-end already knows how to render.
 app.get('/api/subway', async (req, res) => {
   const ids = req.query.ids;
+  const routes = req.query.routes;
   if (!ids) return res.status(400).json({ error: 'ids query param required' });
   if (!/^[A-Z0-9,]+$/i.test(ids)) return res.status(400).json({ error: 'invalid ids' });
+  if (routes && !/^[A-Z0-9,]+$/i.test(routes)) return res.status(400).json({ error: 'invalid routes' });
 
   const stopSet = new Set(ids.split(',').map(s => s.trim().toUpperCase()));
+  const routeList = routes
+    ? routes.split(',').map(route => route.trim().toUpperCase()).filter(Boolean)
+    : ['3', '4', 'A', 'C'];
+  const feedUrls = [...new Set(routeList.map(feedForRoute).filter(Boolean))];
 
-  // Determine which feeds we need (deduplicated)
-  // We serve Crown Heights–Utica (3/4) and Utica Av A/C so fetch both feeds
-  const feedUrls = [...new Set([GTFS_FEEDS['123456S'], GTFS_FEEDS['ACEH']])];
+  if (!feedUrls.length) {
+    return res.status(400).json({ error: 'no supported routes requested' });
+  }
 
   try {
     const feeds = await Promise.all(feedUrls.map(fetchFeed));
