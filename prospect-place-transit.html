@@ -40,7 +40,7 @@ html, body {
   padding: 12px 12px 8px;
   display: flex;
   flex-direction: column;
-  background: rgba(0,0,0,0.45);
+  /* background: rgba(0,0,0,0.45); */
   border-radius: 18px;
   container-type: inline-size;
 }
@@ -67,8 +67,9 @@ html, body {
   font-weight: 800;
   letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: var(--t3);
+  color: white;
   padding: 8px 4px 6px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 
 /* ── row ── */
@@ -124,6 +125,20 @@ html, body {
   flex-direction: column;
   gap: 3px;
 }
+
+.dest-inline {
+  min-width: 0;
+  flex: 1;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dest-inline .dest-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .dest-dir {
   font-size: clamp(var(--dir-font-min), 2.2cqw, var(--dir-font-max));
   font-weight: 800;
@@ -175,6 +190,14 @@ html, body {
   width: 100%;
 }
 
+.row.fit-inline .dest-top {
+  display: none;
+}
+
+.row.fit-inline .dest-inline {
+  display: flex;
+}
+
 @media (min-width: 900px) {
   .sections {
     display: grid;
@@ -201,7 +224,9 @@ html, body {
   padding: 8px 4px 2px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--t3);
+  /* color: var(--t3); */
+  color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 .status-left {
   display: flex;
@@ -440,6 +465,8 @@ let maxArrivals = 2;
 let maxTrains = 6;
 let lastSubwayData = null;
 let lastBusData = [];
+let rowLayoutRaf = null;
+const INLINE_FIT_RATIO = 0.82;
 
 function chipsCol(labels) {
   return `<div class="chips">${labels.slice(0, maxArrivals).map(label =>
@@ -449,12 +476,16 @@ function chipsCol(labels) {
 function subwayRow(route, dir, dest, times) {
   const colors = LINE_COLORS[route] || { bg: '#555', fg: '#fff' };
   return `<div class="row">
-    <div class="dest">
+    <div class="dest dest-top">
       <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
     <div class="row-rail">
       <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${route}</div>
+      <div class="dest-inline">
+        <div class="dest-dir">${dir}</div>
+        <div class="dest-name">${dest}</div>
+      </div>
       ${chipsCol(times.map(fmt))}
     </div>
   </div>`;
@@ -462,15 +493,49 @@ function subwayRow(route, dir, dest, times) {
 
 function busRow(route, dir, dest, times) {
   return `<div class="row">
-    <div class="dest">
+    <div class="dest dest-top">
       <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
     <div class="row-rail">
       <div class="bus-badge">${route}</div>
+      <div class="dest-inline">
+        <div class="dest-dir">${dir}</div>
+        <div class="dest-name">${dest}</div>
+      </div>
       ${chipsCol(times.map(fmt))}
     </div>
   </div>`;
+}
+
+function applyInlineDescriptionLayout() {
+  document.querySelectorAll('.row').forEach(row => {
+    row.classList.remove('fit-inline');
+
+    const rail = row.querySelector('.row-rail');
+    const inlineDest = row.querySelector('.dest-inline');
+    const icon = row.querySelector('.bullet, .bus-badge');
+    const chips = row.querySelector('.chips');
+    if (!rail || !inlineDest || !icon || !chips) return;
+
+    inlineDest.style.display = 'flex';
+    const railGap = parseFloat(getComputedStyle(rail).gap) || 0;
+    const available = rail.clientWidth - icon.offsetWidth - chips.offsetWidth - railGap * 2 - 6;
+    const needed = inlineDest.scrollWidth;
+    inlineDest.style.display = '';
+
+    if (available >= needed * INLINE_FIT_RATIO) {
+      row.classList.add('fit-inline');
+    }
+  });
+}
+
+function scheduleInlineDescriptionLayout() {
+  if (rowLayoutRaf) cancelAnimationFrame(rowLayoutRaf);
+  rowLayoutRaf = requestAnimationFrame(() => {
+    rowLayoutRaf = null;
+    applyInlineDescriptionLayout();
+  });
 }
 
 async function getSubway() {
@@ -568,12 +633,11 @@ function renderCachedData() {
 
   if (lastBusData.length) {
     renderBus(lastBusData);
-    return;
-  }
-
-  if (lastSubwayData) {
+  } else if (lastSubwayData) {
     busRowsEl.innerHTML = '<div class="empty">Bus data unavailable</div>';
   }
+
+  scheduleInlineDescriptionLayout();
 }
 
 function setStatus(state, message) {
@@ -706,6 +770,8 @@ window.addEventListener('message', event => {
     document.getElementById('tweaks-panel').classList.remove('visible');
   }
 });
+
+window.addEventListener('resize', scheduleInlineDescriptionLayout);
 
 syncUI();
 refresh();
