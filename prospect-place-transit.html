@@ -45,6 +45,22 @@ html, body {
   container-type: inline-size;
 }
 
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.section {
+  min-width: 0;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--gap);
+}
+
 /* ── section label ── */
 .sec-label {
   font-size: 14px;
@@ -58,13 +74,14 @@ html, body {
 /* ── row ── */
 .row {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
   padding: var(--row-pad-v) 12px;
   background: var(--row-bg);
   border: 1px solid var(--row-bd);
   border-radius: 12px;
-  margin-bottom: var(--gap);
+  margin-bottom: 0;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -101,7 +118,7 @@ html, body {
 
 /* ── destination block ── */
 .dest {
-  flex: 1;
+  width: 100%;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -128,10 +145,11 @@ html, body {
 /* ── time chips ── */
 .chips {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  flex-shrink: 0;
-  align-items: flex-end;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-left: auto;
 }
 .chip {
   min-width: var(--chip-w);
@@ -150,7 +168,30 @@ html, body {
 .chip.now  { background: rgba(74,222,128,0.22); color: #86efac; }
 .chip.soon { background: rgba(250,204,21,0.22);  color: #fde68a; }
 
-.section-gap { height: 10px; }
+.row-rail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .sections {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+  }
+
+  .rows {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .rows .empty {
+    grid-column: 1 / -1;
+  }
+}
 
 /* ── status ── */
 .status {
@@ -271,13 +312,17 @@ html, body {
 <body>
 
 <div class="board">
-  <div class="sec-label">Subway · Utica Av (A/C) · Near 1485 Prospect Pl</div>
-  <div id="subway-rows"></div>
+  <div class="sections">
+    <section class="section">
+      <div class="sec-label">Subway · Utica Av (A/C/3/4) · Near 1485 Prospect Pl</div>
+      <div class="rows" id="subway-rows"></div>
+    </section>
 
-  <div class="section-gap"></div>
-
-  <div class="sec-label">Bus · B15 + B46 · Prospect Pl</div>
-  <div id="bus-rows"></div>
+    <section class="section">
+      <div class="sec-label">Bus · B15 + B46 · Prospect Pl</div>
+      <div class="rows" id="bus-rows"></div>
+    </section>
+  </div>
 
   <div class="status">
     <div class="status-left">
@@ -338,6 +383,8 @@ const APP_VERSION = 'v1.0.0';
 const DEFAULT_API_BASE = 'https://mta-iframe-production.up.railway.app';
 
 const SUBWAY_STOPS = [
+  { id: "232N", dir: "Uptown", dest: "Manhattan" },
+  { id: "232S", dir: "Downtown", dest: "New Lots / Flatbush" },
   { id: "A27N", dir: "Uptown", dest: "Manhattan / Inwood" },
   { id: "A27S", dir: "Downtown", dest: "Far Rockaway / Lefferts" },
 ];
@@ -402,29 +449,33 @@ function chipsCol(labels) {
 function subwayRow(route, dir, dest, times) {
   const colors = LINE_COLORS[route] || { bg: '#555', fg: '#fff' };
   return `<div class="row">
-    <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${route}</div>
     <div class="dest">
       <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
-    ${chipsCol(times.map(fmt))}
+    <div class="row-rail">
+      <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${route}</div>
+      ${chipsCol(times.map(fmt))}
+    </div>
   </div>`;
 }
 
 function busRow(route, dir, dest, times) {
   return `<div class="row">
-    <div class="bus-badge">${route}</div>
     <div class="dest">
       <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
-    ${chipsCol(times.map(fmt))}
+    <div class="row-rail">
+      <div class="bus-badge">${route}</div>
+      ${chipsCol(times.map(fmt))}
+    </div>
   </div>`;
 }
 
 async function getSubway() {
   const ids = SUBWAY_STOPS.map(stop => stop.id).join(',');
-  const routes = ['A', 'C'].join(',');
+  const routes = ['A', 'C', '3', '4'].join(',');
   const response = await fetch(`${API_BASE}/api/subway?ids=${ids}&routes=${routes}`);
   if (!response.ok) throw new Error(`subway ${response.status}`);
   return response.json();
@@ -560,9 +611,9 @@ async function refresh() {
 }
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "textSize": 26,
+  "textSize": 18,
   "rowPad": 12,
-  "bulletSize": 68,
+  "bulletSize": 54,
   "rowGap": 6,
   "maxArrivals": 2,
   "maxTrains": 4
@@ -575,7 +626,7 @@ function applyTweaks(nextTweaks) {
   rootStyle.setProperty('--dest-font', `${size}px`);
   // rootStyle.setProperty('--dir-font-min', `${Math.max(7, Math.round(size * 0.22))}px`);
   // rootStyle.setProperty('--dir-font-max', `${Math.max(9, Math.round(size * 0.8))}px`);
-  rootStyle.setProperty('--chip-font', `${Math.round(size * 0.72)}px`);
+  // rootStyle.setProperty('--chip-font', `${Math.round(size * 0.72)}px`);
   rootStyle.setProperty('--chip-h', `${Math.round(size * 1.75)}px`);
   rootStyle.setProperty('--chip-w', `${Math.round(size * 3.3)}px`);
   rootStyle.setProperty('--row-pad-v', `${nextTweaks.rowPad || 14}px`);
