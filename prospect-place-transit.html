@@ -3,187 +3,258 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Transit · 1485 Prospect Pl</title>
+<title>Transit · Crown Heights</title>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
 :root {
   --font: 'Figtree', sans-serif;
   --t1: #ffffff;
-  --t2: rgba(255,255,255,0.45);
+  --t2: rgba(255,255,255,0.55);
   --t3: rgba(255,255,255,0.45);
   --row-bg: rgba(0,0,0,0.45);
   --row-bd: rgba(255,255,255,0.09);
+
+  --dest-font: 22px;
+  --dir-font: 11px;
+  --chip-font: 18px;
+  --chip-h: 38px;
+  --chip-w: 80px;
+  --row-pad-v: 14px;
+  --bullet-size: 54px;
+  --bullet-font: 27px;
+  --gap: 6px;
 }
 
-*, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-  background: transparent !important;
+  background: transparent;
   font-family: var(--font);
   color: var(--t1);
-  width: 100%;
   -webkit-font-smoothing: antialiased;
 }
 
 .board {
-  padding: 10px 10px 10px;
+  padding: 12px 12px 8px;
   display: flex;
   flex-direction: column;
-  gap: 0;
-  background: rgba(0,0,0,0.5);
-  border-radius: 16px;
+  background: rgba(0,0,0,0.45);
+  border-radius: 18px;
 }
 
-/* ── section label ──────────────────────── */
+/* ── section label ── */
 .sec-label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 800;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.8px;
   text-transform: uppercase;
-  color: rgba(255,255,255,0.7);
-  padding: 10px 6px 6px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  color: var(--t3);
+  padding: 8px 4px 6px;
 }
 
-/* ── row ────────────────────────────────── */
-/* Layout: [bullet] [dir+dest stacked] [chips] 
-   Key fix: dest shrinks, never truncates — we just make it smaller */
+/* ── row ── */
 .row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
+  gap: 12px;
+  padding: var(--row-pad-v) 12px;
   background: var(--row-bg);
   border: 1px solid var(--row-bd);
-  border-radius: 10px;
-  margin-bottom: 4px;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  animation: pop .18s ease both;
+  border-radius: 12px;
+  margin-bottom: var(--gap);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
-@keyframes pop { from{opacity:0;transform:translateY(3px)} to{opacity:1;transform:translateY(0)} }
 
-/* ── subway bullet ──────────────────────── */
+/* ── subway bullet ── */
 .bullet {
-  width: 44px;
-  height: 44px;
+  width: var(--bullet-size);
+  height: var(--bullet-size);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: var(--bullet-font);
   font-weight: 900;
   flex-shrink: 0;
   line-height: 1;
 }
 
-/* ── bus badge ──────────────────────────── */
+/* ── bus badge ── */
 .bus-badge {
-  border-radius: 8px;
-  height: 38px;
-  min-width: 64px;
+  border-radius: 10px;
+  height: var(--bullet-size);
+  min-width: 76px;
   padding: 0 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 17px;
+  font-size: 21px;
   font-weight: 900;
   flex-shrink: 0;
   background: #F2A900;
   color: #000;
-  letter-spacing: -0.2px;
 }
 
-/* ── destination block ──────────────────── */
+/* ── destination block ── */
 .dest {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 .dest-dir {
-  font-size: 10px;
+  font-size: var(--dir-font);
   font-weight: 800;
   color: var(--t3);
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   line-height: 1;
 }
-/* Full destination — NO truncation, wraps if needed */
 .dest-name {
-  font-size: 15px;
+  font-size: var(--dest-font);
   font-weight: 700;
   color: var(--t1);
-  line-height: 1.25;
-  /* allow wrap so nothing gets cut off */
+  line-height: 1.2;
   white-space: normal;
-  word-break: break-word;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
-/* ── time chips ─────────────────────────── */
+/* ── time chips ── */
 .chips {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
   align-items: flex-end;
 }
 .chip {
-  min-width: 58px;
-  height: 28px;
-  padding: 0 10px;
-  border-radius: 7px;
-  font-size: 14px;
+  min-width: var(--chip-w);
+  height: var(--chip-h);
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: var(--chip-font);
   font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(255,255,255,0.11);
   color: var(--t1);
-  letter-spacing: -0.2px;
   white-space: nowrap;
 }
-.chip.now  { background: rgba(74,222,128,0.25); color: #86efac; }
-.chip.soon { background: rgba(250,204,21,0.25);  color: #fde68a; }
+.chip.now  { background: rgba(74,222,128,0.22); color: #86efac; }
+.chip.soon { background: rgba(250,204,21,0.22);  color: #fde68a; }
 
-/* ── gap between sections ───────────────── */
-.section-gap { height: 6px; }
+.section-gap { height: 10px; }
 
-/* ── status ─────────────────────────────── */
+/* ── status ── */
 .status {
-  display: flex; align-items: center; gap: 6px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   padding: 8px 4px 2px;
-  font-size: 10px; font-weight: 700;
+  font-size: 11px;
+  font-weight: 700;
   color: var(--t3);
-  letter-spacing: 0.3px;
 }
-.dot { width:5px; height:5px; border-radius:50%; background:#4ade80; animation:blink 2.4s ease-in-out infinite; flex-shrink:0; }
-.dot.spin { background:#fbbf24; animation:spin .9s linear infinite; }
-.dot.err  { background:#f87171; animation:none; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+.dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  flex-shrink: 0;
+  animation: blink 2.4s ease-in-out infinite;
+}
+.dot.spin { background: #fbbf24; animation: spin .9s linear infinite; }
+.dot.err  { background: #f87171; animation: none; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
 @keyframes spin  { to{transform:rotate(360deg)} }
 
-/* ── api banner ─────────────────────────── */
-.banner {
-  background: rgba(250,204,21,.10);
-  border: 1px solid rgba(250,204,21,.25);
-  border-radius: 9px;
-  padding: 9px 13px;
-  font-size: 11px; font-weight: 700;
-  color: #fde68a; line-height: 1.8;
-  margin-bottom: 8px;
+.empty {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t3);
+  padding: 6px 4px;
+  font-style: italic;
 }
-.banner a { color:#fcd34d; font-weight:800; }
-.banner code { background:rgba(255,255,255,.10); padding:1px 5px; border-radius:4px; font-size:10px; font-family:monospace; }
 
-.empty { font-size:12px; font-weight:700; color:var(--t3); padding:6px 4px; font-style:italic; }
+/* ── tweaks panel ── */
+#tweaks-panel {
+  display: none;
+  position: fixed;
+  bottom: 20px; right: 20px;
+  background: rgba(18,18,26,0.97);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 16px;
+  padding: 18px 20px 22px;
+  width: 290px;
+  z-index: 9999;
+  color: #fff;
+  font-family: var(--font);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+}
+#tweaks-panel.visible { display: block; }
+#tweaks-panel h3 {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 18px;
+}
+.tw-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.tw-row label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+}
+.tw-row input[type=range] { width: 100%; accent-color: #4ade80; }
+.tw-val {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-align: right;
+}
+.tw-row select {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+  width: 100%;
+  outline: none;
+}
+.tw-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: rgba(255,255,255,0.09);
+  border: none;
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: rgba(255,255,255,0.5);
+  font-size: 14px;
+}
+.tw-close:hover { background: rgba(255,255,255,0.18); }
 </style>
 </head>
 <body>
-<div class="board">
-  <div id="banner-slot"></div>
 
+<div class="board">
   <div class="sec-label">Subway · Crown Hts–Utica Av &amp; Utica Av (A/C)</div>
   <div id="subway-rows"></div>
 
@@ -198,197 +269,351 @@ html, body {
   </div>
 </div>
 
+<!-- Tweaks panel -->
+<div id="tweaks-panel">
+  <button class="tw-close" id="tw-close-btn">✕</button>
+  <h3>Tweaks</h3>
+
+  <div class="tw-row">
+    <label>Destination text size</label>
+    <input type="range" id="tw-size" min="14" max="36" step="1" value="22">
+    <div class="tw-val" id="tw-size-val">22px</div>
+  </div>
+
+  <div class="tw-row">
+    <label>Row padding</label>
+    <input type="range" id="tw-pad" min="6" max="28" step="2" value="14">
+    <div class="tw-val" id="tw-pad-val">14px</div>
+  </div>
+
+  <div class="tw-row">
+    <label>Bullet / badge size</label>
+    <input type="range" id="tw-bullet" min="36" max="76" step="2" value="54">
+    <div class="tw-val" id="tw-bullet-val">54px</div>
+  </div>
+
+  <div class="tw-row">
+    <label>Row gap</label>
+    <input type="range" id="tw-gap" min="2" max="18" step="2" value="6">
+    <div class="tw-val" id="tw-gap-val">6px</div>
+  </div>
+
+  <div class="tw-row">
+    <label>Max subway rows</label>
+    <input type="range" id="tw-trains" min="2" max="10" step="1" value="6">
+    <div class="tw-val" id="tw-trains-val">6 rows</div>
+  </div>
+
+  <div class="tw-row">
+    <label>Arrivals shown per row</label>
+    <select id="tw-arrivals">
+      <option value="1">Next arrival only</option>
+      <option value="2" selected>Next 2 arrivals</option>
+    </select>
+  </div>
+</div>
+
 <script>
 const REFRESH_SEC = 30;
-const MAX         = 2;
 
-/* Subway stop IDs */
 const SUBWAY_STOPS = [
-  { id:"232N", dir:"Uptown",   dest:"Manhattan" },
-  { id:"232S", dir:"Downtown", dest:"New Lots / Flatbush" },
-  { id:"A27N", dir:"Uptown",   dest:"Manhattan / Inwood" },
-  { id:"A27S", dir:"Downtown", dest:"Far Rockaway / Lefferts" },
+  { id: "232N", dir: "Uptown", dest: "Manhattan" },
+  { id: "232S", dir: "Downtown", dest: "New Lots / Flatbush" },
+  { id: "A27N", dir: "Uptown", dest: "Manhattan / Inwood" },
+  { id: "A27S", dir: "Downtown", dest: "Far Rockaway / Lefferts" },
 ];
 
-/* Bus Time stop codes */
-const BUS_STOPS = ["308394","305720","308207"];
+const BUS_STOPS = ["308394", "305720", "308207"];
 
-/* MTA line colors */
-const L = {
-  "1":{bg:"#EE352E",fg:"#fff"},"2":{bg:"#EE352E",fg:"#fff"},"3":{bg:"#EE352E",fg:"#fff"},
-  "4":{bg:"#00933C",fg:"#fff"},"5":{bg:"#00933C",fg:"#fff"},
-  "A":{bg:"#2850AD",fg:"#fff"},"C":{bg:"#2850AD",fg:"#fff"},"E":{bg:"#2850AD",fg:"#fff"},
-  "N":{bg:"#FCCC0A",fg:"#000"},"Q":{bg:"#FCCC0A",fg:"#000"},"R":{bg:"#FCCC0A",fg:"#000"},"W":{bg:"#FCCC0A",fg:"#000"},
-  "B":{bg:"#FF6319",fg:"#fff"},"D":{bg:"#FF6319",fg:"#fff"},"F":{bg:"#FF6319",fg:"#fff"},"M":{bg:"#FF6319",fg:"#fff"},
-  "G":{bg:"#6CBE45",fg:"#fff"},"J":{bg:"#996633",fg:"#fff"},"Z":{bg:"#996633",fg:"#fff"},
-  "L":{bg:"#A7A9AC",fg:"#fff"},"7":{bg:"#B933AD",fg:"#fff"},"S":{bg:"#808183",fg:"#fff"},
+const LINE_COLORS = {
+  "1": { bg: "#EE352E", fg: "#fff" }, "2": { bg: "#EE352E", fg: "#fff" }, "3": { bg: "#EE352E", fg: "#fff" },
+  "4": { bg: "#00933C", fg: "#fff" }, "5": { bg: "#00933C", fg: "#fff" }, "6": { bg: "#00933C", fg: "#fff" },
+  "A": { bg: "#2850AD", fg: "#fff" }, "C": { bg: "#2850AD", fg: "#fff" }, "E": { bg: "#2850AD", fg: "#fff" },
+  "N": { bg: "#FCCC0A", fg: "#000" }, "Q": { bg: "#FCCC0A", fg: "#000" }, "R": { bg: "#FCCC0A", fg: "#000" }, "W": { bg: "#FCCC0A", fg: "#000" },
+  "B": { bg: "#FF6319", fg: "#fff" }, "D": { bg: "#FF6319", fg: "#fff" }, "F": { bg: "#FF6319", fg: "#fff" }, "M": { bg: "#FF6319", fg: "#fff" },
+  "G": { bg: "#6CBE45", fg: "#fff" }, "J": { bg: "#996633", fg: "#fff" }, "Z": { bg: "#996633", fg: "#fff" },
+  "L": { bg: "#A7A9AC", fg: "#fff" }, "7": { bg: "#B933AD", fg: "#fff" }, "S": { bg: "#808183", fg: "#fff" },
 };
 
-const fmt = s => { const m=Math.round(s/60); return m<=0?"Now":m+" min"; };
-const chipCls = l => l==="Now"?"chip now":(!isNaN(parseInt(l))&&parseInt(l)<=3)?"chip soon":"chip";
+const dotEl = document.getElementById('dot');
+const stxtEl = document.getElementById('stxt');
+const subwayRowsEl = document.getElementById('subway-rows');
+const busRowsEl = document.getElementById('bus-rows');
+
+const fmt = seconds => {
+  const minutes = Math.round(seconds / 60);
+  return minutes <= 0 ? 'Now' : `${minutes} min`;
+};
+
+const chipCls = label => label === 'Now'
+  ? 'chip now'
+  : (!Number.isNaN(parseInt(label, 10)) && parseInt(label, 10) <= 3)
+    ? 'chip soon'
+    : 'chip';
+
+let maxArrivals = 2;
+let maxTrains = 6;
+let lastSubwayData = null;
+let lastBusData = [];
 
 function chipsCol(labels) {
-  return `<div class="chips">${labels.map(l=>`<div class="${chipCls(l)}">${l}</div>`).join('')}</div>`;
+  return `<div class="chips">${labels.slice(0, maxArrivals).map(label =>
+    `<div class="${chipCls(label)}">${label}</div>`).join('')}</div>`;
 }
 
-function subwayRow(route, dir, dest, labels) {
-  const m = L[route]||{bg:"#555",fg:"#fff"};
+function subwayRow(route, dir, dest, times) {
+  const colors = LINE_COLORS[route] || { bg: '#555', fg: '#fff' };
   return `<div class="row">
-    <div class="bullet" style="background:${m.bg};color:${m.fg}">${route}</div>
+    <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${route}</div>
     <div class="dest">
       <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
-    ${chipsCol(labels)}
+    ${chipsCol(times.map(fmt))}
   </div>`;
 }
 
-function busRow(route, dest, labels) {
+function busRow(route, dest, times) {
   return `<div class="row">
     <div class="bus-badge">${route}</div>
     <div class="dest">
       <div class="dest-dir">Local Bus</div>
       <div class="dest-name">${dest}</div>
     </div>
-    ${chipsCol(labels)}
+    ${chipsCol(times.map(fmt))}
   </div>`;
 }
 
-/* ── fetch ──────────────────────────────── */
 async function getSubway() {
-  const ids = SUBWAY_STOPS.map(s=>s.id).join(',');
-  const r = await fetch(`/api/subway?ids=${ids}`);
-  if (!r.ok) throw new Error("subway "+r.status);
-  return r.json();
+  const ids = SUBWAY_STOPS.map(stop => stop.id).join(',');
+  const response = await fetch(`/api/subway?ids=${ids}`);
+  if (!response.ok) throw new Error(`subway ${response.status}`);
+  return response.json();
 }
+
 async function getBus(code) {
-  const r = await fetch(`/api/bus/${code}`);
-  if (!r.ok) throw new Error("bus "+r.status);
-  return r.json();
+  const response = await fetch(`/api/bus/${code}`);
+  if (!response.ok) throw new Error(`bus ${response.status}`);
+  return response.json();
 }
 
-/* ── render subway ──────────────────────── */
 function renderSubway(data) {
-  const now = Date.now()/1000;
+  const now = Date.now() / 1000;
   const stopMeta = {};
-  SUBWAY_STOPS.forEach(s => stopMeta[s.id] = {dir:s.dir, dest:s.dest, byRoute:{}});
+  SUBWAY_STOPS.forEach(stop => {
+    stopMeta[stop.id] = { dir: stop.dir, dest: stop.dest, byRoute: {} };
+  });
 
-  (data?.trips||[]).forEach(trip => {
+  (data?.trips || []).forEach(trip => {
     const route = trip.route_id;
-    (trip.stop_time_updates||[]).forEach(stu => {
-      const t = stu.arrival?.time || stu.departure?.time;
-      if (!t) return;
-      const d = t - now;
-      if (d < -30 || d > 3600) return;
-      const sm = stopMeta[stu.stop_id];
-      if (!sm) return;
-      if (!sm.byRoute[route]) sm.byRoute[route] = [];
-      sm.byRoute[route].push(d);
+    (trip.stop_time_updates || []).forEach(update => {
+      const arrivalTime = update.arrival?.time || update.departure?.time;
+      if (!arrivalTime) return;
+
+      const delta = arrivalTime - now;
+      if (delta < -30 || delta > 3600) return;
+
+      const stop = stopMeta[update.stop_id];
+      if (!stop) return;
+
+      if (!stop.byRoute[route]) stop.byRoute[route] = [];
+      stop.byRoute[route].push(delta);
     });
   });
 
   const rows = [];
-  SUBWAY_STOPS.forEach(s => {
-    const sm = stopMeta[s.id];
-    Object.entries(sm.byRoute).forEach(([route, times]) => {
-      times.sort((a,z)=>a-z);
-      rows.push({route, dir:sm.dir, dest:sm.dest, times});
+  SUBWAY_STOPS.forEach(stop => {
+    const meta = stopMeta[stop.id];
+    Object.entries(meta.byRoute).forEach(([route, times]) => {
+      times.sort((a, b) => a - b);
+      rows.push({ route, dir: meta.dir, dest: meta.dest, times });
     });
   });
-  rows.sort((a,b)=>(a.times[0]||9999)-(b.times[0]||9999));
 
-  document.getElementById('subway-rows').innerHTML = rows.length
-    ? rows.map(r => subwayRow(r.route, r.dir, r.dest, r.times.slice(0,MAX).map(fmt))).join('')
+  rows.sort((a, b) => (a.times[0] || 9999) - (b.times[0] || 9999));
+  subwayRowsEl.innerHTML = rows.length
+    ? rows.slice(0, maxTrains).map(row => subwayRow(row.route, row.dir, row.dest, row.times)).join('')
     : '<div class="empty">No trains scheduled</div>';
 }
 
-/* ── render bus ─────────────────────────── */
 function renderBus(allData) {
   const now = Date.now();
   const buckets = {};
+
   allData.forEach(data => {
-    const visits = data?.Siri?.ServiceDelivery?.StopMonitoringDelivery?.[0]?.MonitoredStopVisit||[];
-    visits.forEach(v => {
-      const mvj = v.MonitoredVehicleJourney;
-      const route = (mvj?.PublishedLineName||mvj?.LineRef||'?').replace(/^MTA[^_]*_/,'');
-      const dest = mvj?.DestinationName||'In service';
-      const rawT = mvj?.MonitoredCall?.ExpectedArrivalTime||mvj?.MonitoredCall?.AimedArrivalTime;
-      if (!rawT) return;
-      const d = (new Date(rawT)-now)/1000;
-      if (d<-30||d>3600) return;
-      if (!buckets[route]) buckets[route]={route,dest,times:[]};
-      buckets[route].times.push(d);
+    const visits = data?.Siri?.ServiceDelivery?.StopMonitoringDelivery?.[0]?.MonitoredStopVisit || [];
+    visits.forEach(visit => {
+      const journey = visit.MonitoredVehicleJourney;
+      const route = (journey?.PublishedLineName || journey?.LineRef || '?').replace(/^MTA[^_]*_/, '');
+      const dest = journey?.DestinationName || 'In service';
+      const rawTime = journey?.MonitoredCall?.ExpectedArrivalTime || journey?.MonitoredCall?.AimedArrivalTime;
+      if (!rawTime) return;
+
+      const delta = (new Date(rawTime) - now) / 1000;
+      if (delta < -30 || delta > 3600) return;
+
+      if (!buckets[route]) buckets[route] = { route, dest, times: [] };
+      buckets[route].times.push(delta);
     });
   });
-  Object.values(buckets).forEach(b=>b.times.sort((a,z)=>a-z));
-  const rows = Object.values(buckets)
-    .sort((a,b)=>(a.times[0]||9999)-(b.times[0]||9999)).slice(0,6);
 
-  document.getElementById('bus-rows').innerHTML = rows.length
-    ? rows.map(b=>busRow(b.route,b.dest,b.times.slice(0,MAX).map(fmt))).join('')
+  Object.values(buckets).forEach(bucket => bucket.times.sort((a, b) => a - b));
+  const rows = Object.values(buckets)
+    .sort((a, b) => (a.times[0] || 9999) - (b.times[0] || 9999))
+    .slice(0, 6);
+
+  busRowsEl.innerHTML = rows.length
+    ? rows.map(row => busRow(row.route, row.dest, row.times)).join('')
     : '<div class="empty">No buses scheduled</div>';
 }
 
-/* ── demo ───────────────────────────────── */
-function demo() {
+function renderCachedData() {
+  if (lastSubwayData) renderSubway(lastSubwayData);
 
+  if (lastBusData.length) {
+    renderBus(lastBusData);
+    return;
+  }
 
-  document.getElementById('subway-rows').innerHTML = [
-    subwayRow("4","Uptown",   "Manhattan",               ["2 min","9 min"]),
-    subwayRow("3","Uptown",   "Manhattan",               ["5 min","13 min"]),
-    subwayRow("A","Uptown",   "Manhattan / Inwood",      ["3 min","11 min"]),
-    subwayRow("C","Uptown",   "168 St / Manhattan",      ["7 min","18 min"]),
-    subwayRow("4","Downtown", "New Lots Av",             ["Now","8 min"]),
-    subwayRow("3","Downtown", "New Lots Av",             ["4 min","12 min"]),
-    subwayRow("A","Downtown", "Far Rockaway / Lefferts", ["6 min","14 min"]),
-    subwayRow("C","Downtown", "Euclid Av",               ["10 min","21 min"]),
-  ].join('');
-
-  document.getElementById('bus-rows').innerHTML = [
-    busRow("B65","Fulton Mall / Downtown Bklyn", ["3 min","11 min"]),
-    busRow("B45","Court St / Downtown Bklyn",    ["6 min","15 min"]),
-    busRow("B46","Williamsburg Bridge",           ["Now","12 min"]),
-    busRow("B14","New Utrecht Av",               ["7 min","19 min"]),
-    busRow("B17","Flatbush Av",                  ["9 min","22 min"]),
-  ].join('');
-
-  setStatus('err','Demo mode · add your MTA key above for live data');
-}
-
-/* ── status / loop ──────────────────────── */
-const dotEl  = document.getElementById('dot');
-const stxtEl = document.getElementById('stxt');
-function setStatus(s,msg) {
-  dotEl.className = 'dot'+(s==='ok'?'':s==='loading'?' spin':' err');
-  stxtEl.textContent = msg;
-}
-
-async function refresh() {
-  document.getElementById('banner-slot').innerHTML='';
-  setStatus('loading','Refreshing…');
-  try {
-    const [sub, ...busResults] = await Promise.all([
-      getSubway(),
-      ...BUS_STOPS.map(code => getBus(code).catch(() => null)),
-    ]);
-    renderSubway(sub);
-    const buses = busResults.filter(Boolean);
-    if (buses.length) {
-      renderBus(buses);
-    } else {
-      document.getElementById('bus-rows').innerHTML =
-        '<div class="empty">Bus data unavailable</div>';
-    }
-    const t = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    setStatus('ok',`Live · ${t}`);
-  } catch(e) {
-    console.error(e);
-    setStatus('err','Fetch error — retrying…');
+  if (lastSubwayData) {
+    busRowsEl.innerHTML = '<div class="empty">Bus data unavailable</div>';
   }
 }
 
+function setStatus(state, message) {
+  dotEl.className = `dot${state === 'ok' ? '' : state === 'loading' ? ' spin' : ' err'}`;
+  stxtEl.textContent = message;
+}
+
+async function refresh() {
+  setStatus('loading', 'Refreshing…');
+  try {
+    const [subwayData, ...busResults] = await Promise.all([
+      getSubway(),
+      ...BUS_STOPS.map(code => getBus(code).catch(() => null)),
+    ]);
+
+    lastSubwayData = subwayData;
+    lastBusData = busResults.filter(Boolean);
+
+    renderCachedData();
+
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    setStatus('ok', `Live · ${timestamp}`);
+  } catch (error) {
+    console.error(error);
+    if (lastSubwayData || lastBusData.length) {
+      renderCachedData();
+      setStatus('err', 'Fetch error · showing last update');
+      return;
+    }
+
+    subwayRowsEl.innerHTML = '<div class="empty">Transit data unavailable</div>';
+    busRowsEl.innerHTML = '<div class="empty">Transit data unavailable</div>';
+    setStatus('err', 'Fetch error — retrying…');
+  }
+}
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "textSize": 36,
+  "rowPad": 12,
+  "bulletSize": 76,
+  "rowGap": 6,
+  "maxArrivals": 2,
+  "maxTrains": 4
+}/*EDITMODE-END*/;
+
+function applyTweaks(nextTweaks) {
+  const rootStyle = document.documentElement.style;
+  const size = nextTweaks.textSize || 22;
+
+  rootStyle.setProperty('--dest-font', `${size}px`);
+  rootStyle.setProperty('--dir-font', `${Math.max(10, Math.round(size * 0.52))}px`);
+  rootStyle.setProperty('--chip-font', `${Math.round(size * 0.82)}px`);
+  rootStyle.setProperty('--chip-h', `${Math.round(size * 1.75)}px`);
+  rootStyle.setProperty('--chip-w', `${Math.round(size * 3.7)}px`);
+  rootStyle.setProperty('--row-pad-v', `${nextTweaks.rowPad || 14}px`);
+  rootStyle.setProperty('--bullet-size', `${nextTweaks.bulletSize || 54}px`);
+  rootStyle.setProperty('--bullet-font', `${Math.round((nextTweaks.bulletSize || 54) * 0.5)}px`);
+  rootStyle.setProperty('--gap', `${nextTweaks.rowGap || 6}px`);
+
+  maxArrivals = nextTweaks.maxArrivals || 2;
+  maxTrains = nextTweaks.maxTrains || 6;
+  renderCachedData();
+}
+
+let tweaks = Object.assign({}, TWEAK_DEFAULTS);
+applyTweaks(tweaks);
+
+function syncUI() {
+  document.getElementById('tw-size').value = tweaks.textSize;
+  document.getElementById('tw-size-val').textContent = `${tweaks.textSize}px`;
+  document.getElementById('tw-pad').value = tweaks.rowPad;
+  document.getElementById('tw-pad-val').textContent = `${tweaks.rowPad}px`;
+  document.getElementById('tw-bullet').value = tweaks.bulletSize;
+  document.getElementById('tw-bullet-val').textContent = `${tweaks.bulletSize}px`;
+  document.getElementById('tw-gap').value = tweaks.rowGap;
+  document.getElementById('tw-gap-val').textContent = `${tweaks.rowGap}px`;
+  document.getElementById('tw-trains').value = tweaks.maxTrains || 6;
+  document.getElementById('tw-trains-val').textContent = `${tweaks.maxTrains || 6} rows`;
+  document.getElementById('tw-arrivals').value = tweaks.maxArrivals;
+}
+
+function saveTweak(key, value) {
+  tweaks[key] = value;
+  applyTweaks(tweaks);
+  window.parent.postMessage({ type: '__edit_mode_set_keys', edits: tweaks }, '*');
+}
+
+document.getElementById('tw-size').addEventListener('input', event => {
+  document.getElementById('tw-size-val').textContent = `${event.target.value}px`;
+  saveTweak('textSize', Number(event.target.value));
+});
+
+document.getElementById('tw-pad').addEventListener('input', event => {
+  document.getElementById('tw-pad-val').textContent = `${event.target.value}px`;
+  saveTweak('rowPad', Number(event.target.value));
+});
+
+document.getElementById('tw-bullet').addEventListener('input', event => {
+  document.getElementById('tw-bullet-val').textContent = `${event.target.value}px`;
+  saveTweak('bulletSize', Number(event.target.value));
+});
+
+document.getElementById('tw-gap').addEventListener('input', event => {
+  document.getElementById('tw-gap-val').textContent = `${event.target.value}px`;
+  saveTweak('rowGap', Number(event.target.value));
+});
+
+document.getElementById('tw-trains').addEventListener('input', event => {
+  document.getElementById('tw-trains-val').textContent = `${event.target.value} rows`;
+  saveTweak('maxTrains', Number(event.target.value));
+});
+
+document.getElementById('tw-arrivals').addEventListener('change', event => {
+  saveTweak('maxArrivals', Number(event.target.value));
+});
+
+document.getElementById('tw-close-btn').addEventListener('click', () => {
+  document.getElementById('tweaks-panel').classList.remove('visible');
+  window.parent.postMessage({ type: '__edit_mode_dismissed' }, '*');
+});
+
+window.addEventListener('message', event => {
+  if (event.data?.type === '__activate_edit_mode') {
+    syncUI();
+    document.getElementById('tweaks-panel').classList.add('visible');
+  }
+
+  if (event.data?.type === '__deactivate_edit_mode') {
+    document.getElementById('tweaks-panel').classList.remove('visible');
+  }
+});
+
+syncUI();
 refresh();
-setInterval(refresh, REFRESH_SEC*1000);
+setInterval(refresh, REFRESH_SEC * 1000);
+window.parent.postMessage({ type: '__edit_mode_available' }, '*');
 </script>
 </body>
 </html>
