@@ -15,14 +15,15 @@
   --row-bg: rgba(0,0,0,0.45);
   --row-bd: rgba(255,255,255,0.09);
 
-  --dest-font: 22px;
+  --dest-font: 19px;
+  --dir-font-min: 8px;
   --dir-font-max: 11px;
-  --chip-font: 18px;
+  --chip-font: 15px;
   --chip-h: 38px;
   --chip-w: 80px;
   --row-pad-v: 14px;
   --bullet-size: 54px;
-  --bullet-font: 27px;
+  --bullet-font: 24px;
   --gap: 6px;
 }
 
@@ -41,11 +42,12 @@ html, body {
   flex-direction: column;
   background: rgba(0,0,0,0.45);
   border-radius: 18px;
+  container-type: inline-size;
 }
 
 /* ── section label ── */
 .sec-label {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 1.8px;
   text-transform: uppercase;
@@ -90,7 +92,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 900;
   flex-shrink: 0;
   background: #F2A900;
@@ -106,7 +108,7 @@ html, body {
   gap: 3px;
 }
 .dest-dir {
-  font-size: clamp(10px, 1.1vw + 6px, var(--dir-font-max));
+  font-size: clamp(var(--dir-font-min), 2.2cqw, var(--dir-font-max));
   font-weight: 800;
   color: var(--t3);
   letter-spacing: 1.2px;
@@ -156,7 +158,7 @@ html, body {
   align-items: center;
   gap: 7px;
   padding: 8px 4px 2px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: var(--t3);
 }
@@ -173,7 +175,7 @@ html, body {
 @keyframes spin  { to{transform:rotate(360deg)} }
 
 .empty {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--t3);
   padding: 6px 4px;
@@ -537,9 +539,9 @@ async function refresh() {
 }
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "textSize": 36,
+  "textSize": 30,
   "rowPad": 12,
-  "bulletSize": 76,
+  "bulletSize": 68,
   "rowGap": 6,
   "maxArrivals": 2,
   "maxTrains": 4
@@ -550,13 +552,14 @@ function applyTweaks(nextTweaks) {
   const size = nextTweaks.textSize || 22;
 
   rootStyle.setProperty('--dest-font', `${size}px`);
-  rootStyle.setProperty('--dir-font-max', `${Math.max(10, Math.round(size * 0.52))}px`);
-  rootStyle.setProperty('--chip-font', `${Math.round(size * 0.82)}px`);
+  rootStyle.setProperty('--dir-font-min', `${Math.max(7, Math.round(size * 0.22))}px`);
+  rootStyle.setProperty('--dir-font-max', `${Math.max(9, Math.round(size * 0.4))}px`);
+  rootStyle.setProperty('--chip-font', `${Math.round(size * 0.72)}px`);
   rootStyle.setProperty('--chip-h', `${Math.round(size * 1.75)}px`);
-  rootStyle.setProperty('--chip-w', `${Math.round(size * 3.7)}px`);
+  rootStyle.setProperty('--chip-w', `${Math.round(size * 3.3)}px`);
   rootStyle.setProperty('--row-pad-v', `${nextTweaks.rowPad || 14}px`);
   rootStyle.setProperty('--bullet-size', `${nextTweaks.bulletSize || 54}px`);
-  rootStyle.setProperty('--bullet-font', `${Math.round((nextTweaks.bulletSize || 54) * 0.5)}px`);
+  rootStyle.setProperty('--bullet-font', `${Math.round((nextTweaks.bulletSize || 54) * 0.44)}px`);
   rootStyle.setProperty('--gap', `${nextTweaks.rowGap || 6}px`);
 
   maxArrivals = nextTweaks.maxArrivals || 2;
