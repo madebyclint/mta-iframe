@@ -156,11 +156,25 @@ html, body {
 .status {
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: space-between;
   padding: 8px 4px 2px;
   font-size: 14px;
   font-weight: 700;
   color: var(--t3);
+}
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.status-version {
+  margin-left: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  opacity: 0.9;
+  white-space: nowrap;
 }
 .dot {
   width: 6px; height: 6px;
@@ -266,8 +280,11 @@ html, body {
   <div id="bus-rows"></div>
 
   <div class="status">
-    <div class="dot spin" id="dot"></div>
-    <span id="stxt">Loading…</span>
+    <div class="status-left">
+      <div class="dot spin" id="dot"></div>
+      <span id="stxt">Loading…</span>
+    </div>
+    <span class="status-version" id="ver">v1.0.0</span>
   </div>
 </div>
 
@@ -317,6 +334,7 @@ html, body {
 
 <script>
 const REFRESH_SEC = 30;
+const APP_VERSION = 'v1.0.0';
 const DEFAULT_API_BASE = 'https://mta-iframe-production.up.railway.app';
 
 const SUBWAY_STOPS = [
@@ -354,8 +372,11 @@ const LINE_COLORS = {
 
 const dotEl = document.getElementById('dot');
 const stxtEl = document.getElementById('stxt');
+const verEl = document.getElementById('ver');
 const subwayRowsEl = document.getElementById('subway-rows');
 const busRowsEl = document.getElementById('bus-rows');
+
+verEl.textContent = APP_VERSION;
 
 const fmt = seconds => {
   const minutes = Math.round(seconds / 60);
