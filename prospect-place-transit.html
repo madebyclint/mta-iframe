@@ -11,13 +11,13 @@
   --font: 'Figtree', sans-serif;
   --t1: #ffffff;
   --t2: rgba(255,255,255,0.55);
-  --t3: rgba(255,255,255,0.45);
+  --t3: rgba(255,255,255,0.75);
   --row-bg: rgba(0,0,0,0.45);
   --row-bd: rgba(255,255,255,0.09);
 
   --dest-font: 19px;
-  --dir-font-min: 8px;
-  --dir-font-max: 11px;
+  --dir-font-min: 13px;
+  --dir-font-max: 13px;
   --chip-font: 15px;
   --chip-h: 38px;
   --chip-w: 80px;
@@ -47,7 +47,7 @@ html, body {
 
 /* ── section label ── */
 .sec-label {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   letter-spacing: 1.8px;
   text-transform: uppercase;
@@ -88,11 +88,11 @@ html, body {
   border-radius: 10px;
   height: var(--bullet-size);
   min-width: 76px;
-  padding: 0 10px;
+  padding: 0 5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 24px;
   font-weight: 900;
   flex-shrink: 0;
   background: #F2A900;
@@ -158,7 +158,7 @@ html, body {
   align-items: center;
   gap: 7px;
   padding: 8px 4px 2px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--t3);
 }
@@ -539,7 +539,7 @@ async function refresh() {
 }
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
-  "textSize": 30,
+  "textSize": 26,
   "rowPad": 12,
   "bulletSize": 68,
   "rowGap": 6,
@@ -552,8 +552,8 @@ function applyTweaks(nextTweaks) {
   const size = nextTweaks.textSize || 22;
 
   rootStyle.setProperty('--dest-font', `${size}px`);
-  rootStyle.setProperty('--dir-font-min', `${Math.max(7, Math.round(size * 0.22))}px`);
-  rootStyle.setProperty('--dir-font-max', `${Math.max(9, Math.round(size * 0.4))}px`);
+  // rootStyle.setProperty('--dir-font-min', `${Math.max(7, Math.round(size * 0.22))}px`);
+  // rootStyle.setProperty('--dir-font-max', `${Math.max(9, Math.round(size * 0.8))}px`);
   rootStyle.setProperty('--chip-font', `${Math.round(size * 0.72)}px`);
   rootStyle.setProperty('--chip-h', `${Math.round(size * 1.75)}px`);
   rootStyle.setProperty('--chip-w', `${Math.round(size * 3.3)}px`);
