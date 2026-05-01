@@ -107,4 +107,9 @@ app.get('/api/bus/:code', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Listening on port ${PORT}`));
+
+process.on('uncaughtException', err => {
+  console.error('Uncaught exception:', err);
+  process.exit(1);
+});
