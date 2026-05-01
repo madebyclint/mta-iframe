@@ -1,0 +1,19 @@
+{
+  "name": "prospect-place-transit",
+  "version": "1.0.0",
+  "description": "Transit board for 1485 Prospect Pl",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "gtfs-realtime-bindings": "^1.1.1",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

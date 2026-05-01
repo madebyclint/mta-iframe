@@ -6,11 +6,6 @@
 <title>Transit · 1485 Prospect Pl</title>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@600;700;800;900&display=swap" rel="stylesheet">
 <style>
-/* ══════════════════════════════════════════
-   CONFIG  —  free key at https://api.mta.info
-══════════════════════════════════════════ */
-:root { --api-key: "YOUR_MTA_API_KEY_HERE"; }
-
 :root {
   --font: 'Figtree', sans-serif;
   --t1: #ffffff;
@@ -31,20 +26,23 @@ html, body {
 }
 
 .board {
-  padding: 4px 4px 6px;
+  padding: 10px 10px 10px;
   display: flex;
   flex-direction: column;
   gap: 0;
+  background: rgba(0,0,0,0.5);
+  border-radius: 16px;
 }
 
 /* ── section label ──────────────────────── */
 .sec-label {
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 2.5px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: var(--t3);
-  padding: 12px 4px 6px;
+  color: rgba(255,255,255,0.7);
+  padding: 10px 6px 6px;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 
 /* ── row ────────────────────────────────── */
@@ -201,10 +199,6 @@ html, body {
 </div>
 
 <script>
-/* ════════════════════════════════════════
-   CONFIG  —  https://api.mta.info (free)
-════════════════════════════════════════ */
-const API_KEY     = "YOUR_MTA_API_KEY_HERE";
 const REFRESH_SEC = 30;
 const MAX         = 2;
 
@@ -263,15 +257,12 @@ function busRow(route, dest, labels) {
 /* ── fetch ──────────────────────────────── */
 async function getSubway() {
   const ids = SUBWAY_STOPS.map(s=>s.id).join(',');
-  const r = await fetch(`https://api.mta.info/v2/schedule/${ids}?key=${API_KEY}`);
+  const r = await fetch(`/api/subway?ids=${ids}`);
   if (!r.ok) throw new Error("subway "+r.status);
   return r.json();
 }
 async function getBus(code) {
-  const r = await fetch(
-    `https://bustime.mta.info/api/siri/stop-monitoring.json`+
-    `?key=${API_KEY}&OperatorRef=MTA&MonitoringRef=${code}&MaximumStopVisits=8`
-  );
+  const r = await fetch(`/api/bus/${code}`);
   if (!r.ok) throw new Error("bus "+r.status);
   return r.json();
 }
@@ -340,11 +331,7 @@ function renderBus(allData) {
 
 /* ── demo ───────────────────────────────── */
 function demo() {
-  document.getElementById('banner-slot').innerHTML = `<div class="banner">
-    ✨ <strong>Add your MTA key for live arrivals</strong><br>
-    Register free → <a href="https://api.mta.info" target="_blank">api.mta.info</a>
-    · open this file, replace <code>YOUR_MTA_API_KEY_HERE</code>, save &amp; reload.
-  </div>`;
+
 
   document.getElementById('subway-rows').innerHTML = [
     subwayRow("4","Uptown",   "Manhattan",               ["2 min","9 min"]),
@@ -377,12 +364,21 @@ function setStatus(s,msg) {
 }
 
 async function refresh() {
-  if (!API_KEY || API_KEY==="YOUR_MTA_API_KEY_HERE") { demo(); return; }
   document.getElementById('banner-slot').innerHTML='';
   setStatus('loading','Refreshing…');
   try {
-    const [sub,...buses] = await Promise.all([getSubway(),...BUS_STOPS.map(getBus)]);
-    renderSubway(sub); renderBus(buses);
+    const [sub, ...busResults] = await Promise.all([
+      getSubway(),
+      ...BUS_STOPS.map(code => getBus(code).catch(() => null)),
+    ]);
+    renderSubway(sub);
+    const buses = busResults.filter(Boolean);
+    if (buses.length) {
+      renderBus(buses);
+    } else {
+      document.getElementById('bus-rows').innerHTML =
+        '<div class="empty">Bus data unavailable</div>';
+    }
     const t = new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
     setStatus('ok',`Live · ${t}`);
   } catch(e) {
