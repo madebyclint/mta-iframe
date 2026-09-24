@@ -180,6 +180,21 @@ html, body {
   color: var(--t1);
   white-space: nowrap;
 }
+.chip-route {
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8em;
+  font-weight: 900;
+  margin-right: 8px;
+  line-height: 1;
+}
+
+.section[hidden] { display: none; }
+
 .chip.now  { background: rgba(74,222,128,0.22); color: #86efac; }
 .chip.soon { background: rgba(250,204,21,0.22);  color: #fde68a; }
 
@@ -204,6 +219,10 @@ html, body {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 14px;
     align-items: start;
+  }
+
+  .sections:has(> .section[hidden]) {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .rows {
@@ -343,7 +362,7 @@ html, body {
       <div class="rows" id="subway-rows"></div>
     </section>
 
-    <section class="section">
+    <section class="section" id="bus-section">
       <div class="sec-label">Bus · B15 + B46 · Prospect Pl</div>
       <div class="rows" id="bus-rows"></div>
     </section>
@@ -388,12 +407,6 @@ html, body {
   </div>
 
   <div class="tw-row">
-    <label>Max subway rows</label>
-    <input type="range" id="tw-trains" min="2" max="10" step="1" value="6">
-    <div class="tw-val" id="tw-trains-val">6 rows</div>
-  </div>
-
-  <div class="tw-row">
     <label>Arrivals shown per row</label>
     <select id="tw-arrivals">
       <option value="1">Next arrival only</option>
@@ -407,12 +420,18 @@ const REFRESH_SEC = 30;
 const APP_VERSION = 'v1.0.0';
 const DEFAULT_API_BASE = 'https://mta-iframe-production.up.railway.app';
 
-const SUBWAY_STOPS = [
-  { id: "232N", dir: "Uptown", dest: "Manhattan" },
-  { id: "232S", dir: "Downtown", dest: "New Lots / Flatbush" },
-  { id: "A27N", dir: "Uptown", dest: "Manhattan / Inwood" },
-  { id: "A27S", dir: "Downtown", dest: "Far Rockaway / Lefferts" },
+const TRAINS_PER_DIRECTION = 2;
+
+// One row per line group + direction, in display order
+const SUBWAY_GROUPS = [
+  { routes: ['A', 'C'], stopId: 'A48N', dir: 'Uptown',   dest: 'Manhattan' },
+  { routes: ['A', 'C'], stopId: 'A48S', dir: 'Downtown', dest: 'Far Rockaway / Lefferts' },
+  { routes: ['3', '4'], stopId: '250N', dir: 'Uptown',   dest: 'Manhattan' },
+  { routes: ['3', '4'], stopId: '250S', dir: 'Downtown', dest: 'New Lots' },
 ];
+
+// Buses are paused for now; flip to true to bring them back
+const SHOW_BUSES = false;
 
 const BUS_STOPS = [
   { code: '303676', dir: 'Southbound' },
@@ -448,6 +467,8 @@ const verEl = document.getElementById('ver');
 const subwayRowsEl = document.getElementById('subway-rows');
 const busRowsEl = document.getElementById('bus-rows');
 
+document.getElementById('bus-section').hidden = !SHOW_BUSES;
+
 verEl.textContent = APP_VERSION;
 
 const fmt = seconds => {
@@ -462,7 +483,6 @@ const chipCls = label => label === 'Now'
     : 'chip';
 
 let maxArrivals = 2;
-let maxTrains = 6;
 let lastSubwayData = null;
 let lastBusData = [];
 let rowLayoutRaf = null;
@@ -473,20 +493,30 @@ function chipsCol(labels) {
     `<div class="${chipCls(label)}">${label}</div>`).join('')}</div>`;
 }
 
-function subwayRow(route, dir, dest, times) {
-  const colors = LINE_COLORS[route] || { bg: '#555', fg: '#fff' };
+const routeColors = route => LINE_COLORS[route] || { bg: '#555', fg: '#fff' };
+
+// trains: [{ route, delta }] sorted soonest first
+function subwayRow(routes, dir, dest, trains) {
+  const colors = routeColors(trains[0]?.route || routes[0]);
+  const chips = trains.length
+    ? `<div class="chips">${trains.slice(0, maxArrivals).map(({ route, delta }) => {
+        const c = routeColors(route);
+        const label = fmt(delta);
+        return `<div class="${chipCls(label)}"><span class="chip-route" style="background:${c.bg};color:${c.fg}">${route}</span>${label}</div>`;
+      }).join('')}</div>`
+    : '<div class="chips"><div class="chip">—</div></div>';
   return `<div class="row">
     <div class="dest dest-top">
       <div class="dest-dir">${dir}</div>
       <div class="dest-name">${dest}</div>
     </div>
     <div class="row-rail">
-      <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${route}</div>
+      <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${routes.join('/')}</div>
       <div class="dest-inline">
         <div class="dest-dir">${dir}</div>
         <div class="dest-name">${dest}</div>
       </div>
-      ${chipsCol(times.map(fmt))}
+      ${chips}
     </div>
   </div>`;
 }
@@ -539,8 +569,8 @@ function scheduleInlineDescriptionLayout() {
 }
 
 async function getSubway() {
-  const ids = SUBWAY_STOPS.map(stop => stop.id).join(',');
-  const routes = ['A', 'C', '3', '4'].join(',');
+  const ids = [...new Set(SUBWAY_GROUPS.map(group => group.stopId))].join(',');
+  const routes = [...new Set(SUBWAY_GROUPS.flatMap(group => group.routes))].join(',');
   const response = await fetch(`${API_BASE}/api/subway?ids=${ids}&routes=${routes}`);
   if (!response.ok) throw new Error(`subway ${response.status}`);
   return response.json();
@@ -557,10 +587,7 @@ async function getBus(stop) {
 
 function renderSubway(data) {
   const now = Date.now() / 1000;
-  const stopMeta = {};
-  SUBWAY_STOPS.forEach(stop => {
-    stopMeta[stop.id] = { dir: stop.dir, dest: stop.dest, byRoute: {} };
-  });
+  const trainsByGroup = SUBWAY_GROUPS.map(() => []);
 
   (data?.trips || []).forEach(trip => {
     const route = trip.route_id;
@@ -571,27 +598,20 @@ function renderSubway(data) {
       const delta = arrivalTime - now;
       if (delta < -30 || delta > 3600) return;
 
-      const stop = stopMeta[update.stop_id];
-      if (!stop) return;
-
-      if (!stop.byRoute[route]) stop.byRoute[route] = [];
-      stop.byRoute[route].push(delta);
+      SUBWAY_GROUPS.forEach((group, i) => {
+        if (group.stopId === update.stop_id && group.routes.includes(route)) {
+          trainsByGroup[i].push({ route, delta });
+        }
+      });
     });
   });
 
-  const rows = [];
-  SUBWAY_STOPS.forEach(stop => {
-    const meta = stopMeta[stop.id];
-    Object.entries(meta.byRoute).forEach(([route, times]) => {
-      times.sort((a, b) => a - b);
-      rows.push({ route, dir: meta.dir, dest: meta.dest, times });
-    });
-  });
-
-  rows.sort((a, b) => (a.times[0] || 9999) - (b.times[0] || 9999));
-  subwayRowsEl.innerHTML = rows.length
-    ? rows.slice(0, maxTrains).map(row => subwayRow(row.route, row.dir, row.dest, row.times)).join('')
-    : '<div class="empty">No trains scheduled</div>';
+  subwayRowsEl.innerHTML = SUBWAY_GROUPS.map((group, i) => {
+    const trains = trainsByGroup[i]
+      .sort((a, b) => a.delta - b.delta)
+      .slice(0, TRAINS_PER_DIRECTION);
+    return subwayRow(group.routes, group.dir, group.dest, trains);
+  }).join('');
 }
 
 function renderBus(allData) {
@@ -631,7 +651,9 @@ function renderBus(allData) {
 function renderCachedData() {
   if (lastSubwayData) renderSubway(lastSubwayData);
 
-  if (lastBusData.length) {
+  if (!SHOW_BUSES) {
+    // bus section hidden
+  } else if (lastBusData.length) {
     renderBus(lastBusData);
   } else if (lastSubwayData) {
     busRowsEl.innerHTML = '<div class="empty">Bus data unavailable</div>';
@@ -650,7 +672,7 @@ async function refresh() {
   try {
     const [subwayData, ...busResults] = await Promise.all([
       getSubway(),
-      ...BUS_STOPS.map(stop => getBus(stop).catch(() => null)),
+      ...(SHOW_BUSES ? BUS_STOPS : []).map(stop => getBus(stop).catch(() => null)),
     ]);
 
     lastSubwayData = subwayData;
@@ -679,8 +701,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "rowPad": 12,
   "bulletSize": 54,
   "rowGap": 6,
-  "maxArrivals": 2,
-  "maxTrains": 4
+  "maxArrivals": 2
 }/*EDITMODE-END*/;
 
 function applyTweaks(nextTweaks) {
@@ -699,7 +720,6 @@ function applyTweaks(nextTweaks) {
   rootStyle.setProperty('--gap', `${nextTweaks.rowGap || 6}px`);
 
   maxArrivals = nextTweaks.maxArrivals || 2;
-  maxTrains = nextTweaks.maxTrains || 6;
   renderCachedData();
 }
 
@@ -715,8 +735,6 @@ function syncUI() {
   document.getElementById('tw-bullet-val').textContent = `${tweaks.bulletSize}px`;
   document.getElementById('tw-gap').value = tweaks.rowGap;
   document.getElementById('tw-gap-val').textContent = `${tweaks.rowGap}px`;
-  document.getElementById('tw-trains').value = tweaks.maxTrains || 6;
-  document.getElementById('tw-trains-val').textContent = `${tweaks.maxTrains || 6} rows`;
   document.getElementById('tw-arrivals').value = tweaks.maxArrivals;
 }
 
@@ -744,11 +762,6 @@ document.getElementById('tw-bullet').addEventListener('input', event => {
 document.getElementById('tw-gap').addEventListener('input', event => {
   document.getElementById('tw-gap-val').textContent = `${event.target.value}px`;
   saveTweak('rowGap', Number(event.target.value));
-});
-
-document.getElementById('tw-trains').addEventListener('input', event => {
-  document.getElementById('tw-trains-val').textContent = `${event.target.value} rows`;
-  saveTweak('maxTrains', Number(event.target.value));
 });
 
 document.getElementById('tw-arrivals').addEventListener('change', event => {
