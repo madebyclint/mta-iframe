@@ -421,6 +421,8 @@ const APP_VERSION = 'v1.0.0';
 const DEFAULT_API_BASE = 'https://mta-iframe-production.up.railway.app';
 
 const TRAINS_PER_DIRECTION = 2;
+// Walk time to Utica Av; trains arriving sooner than this can't be caught
+const WALK_SEC = 15 * 60;
 
 // One row per line group + direction, in display order
 const SUBWAY_GROUPS = [
@@ -502,7 +504,9 @@ function subwayRow(routes, dir, dest, trains) {
     ? `<div class="chips">${trains.slice(0, maxArrivals).map(({ route, delta }) => {
         const c = routeColors(route);
         const label = fmt(delta);
-        return `<div class="${chipCls(label)}"><span class="chip-route" style="background:${c.bg};color:${c.fg}">${route}</span>${label}</div>`;
+        // Highlight trains you need to leave for within 3 minutes
+        const cls = delta - WALK_SEC <= 3 * 60 ? 'chip soon' : 'chip';
+        return `<div class="${cls}"><span class="chip-route" style="background:${c.bg};color:${c.fg}">${route}</span>${label}</div>`;
       }).join('')}</div>`
     : '<div class="chips"><div class="chip">—</div></div>';
   return `<div class="row">
@@ -596,7 +600,7 @@ function renderSubway(data) {
       if (!arrivalTime) return;
 
       const delta = arrivalTime - now;
-      if (delta < -30 || delta > 3600) return;
+      if (delta < WALK_SEC || delta > 3600) return;
 
       SUBWAY_GROUPS.forEach((group, i) => {
         if (group.stopId === update.stop_id && group.routes.includes(route)) {
