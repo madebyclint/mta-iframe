@@ -208,10 +208,15 @@ html, body {
 .row-alert.planned { background: rgba(250,204,21,0.8); color: #000; }
 
 .alerts {
+  --alert-font: 19px;
+  /* every card is two lines tall so the box always fits exactly 3 */
+  --alert-h: calc(var(--alert-font) * 1.35 * 2 + 22px);
   display: flex;
   flex-direction: column;
   gap: var(--gap);
   margin-top: var(--gap);
+  max-height: calc(var(--alert-h) * 3 + var(--gap) * 2);
+  overflow: hidden;
 }
 .alerts:empty { display: none; }
 .alert {
@@ -225,19 +230,21 @@ html, body {
   border-radius: 12px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  font-size: 15px;
+  flex-shrink: 0;
+  height: var(--alert-h);
+  font-size: var(--alert-font);
   font-weight: 700;
   line-height: 1.35;
 }
 .alert.planned { border-left-color: #facc15; }
 .alert-type {
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #fca5a5;
-  padding-top: 2px;
+  padding-top: 3px;
 }
 .alert.planned .alert-type { color: #fde68a; }
 .alert-text {
@@ -661,12 +668,33 @@ function alertHtml(text) {
   });
 }
 
+const ALERTS_VISIBLE = 3;
+const ALERT_ROTATE_SEC = 6;
+let alertIndex = 0;
+
 function renderAlerts() {
   subwayAlertsEl.innerHTML = lastAlerts.map(alert => `<div class="alert${alert.planned ? ' planned' : ''}">
     <div class="alert-type">${escapeHtml(alert.type)}</div>
     <div class="alert-text">${alertHtml(alert.header)}</div>
   </div>`).join('');
+  scrollAlerts('auto');
 }
+
+// With more than 3 alerts, step through them one card at a time, then loop
+function scrollAlerts(behavior) {
+  const cards = subwayAlertsEl.children;
+  const lastStart = Math.max(0, cards.length - ALERTS_VISIBLE);
+  if (alertIndex > lastStart) alertIndex = 0;
+  const top = cards[alertIndex] ? cards[alertIndex].offsetTop - subwayAlertsEl.firstElementChild.offsetTop : 0;
+  subwayAlertsEl.scrollTo({ top, behavior });
+}
+
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+setInterval(() => {
+  if (subwayAlertsEl.children.length <= ALERTS_VISIBLE) return;
+  alertIndex += 1;
+  scrollAlerts(reduceMotion.matches ? 'auto' : 'smooth');
+}, ALERT_ROTATE_SEC * 1000);
 
 async function getBus(stop) {
   const response = await fetch(`${API_BASE}/api/bus/${stop.code}`);
