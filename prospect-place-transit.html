@@ -195,6 +195,59 @@ html, body {
 
 .section[hidden] { display: none; }
 
+/* ── service alerts ── */
+.row-alert {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  background: rgba(248,113,113,0.85);
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+.row-alert.planned { background: rgba(250,204,21,0.8); color: #000; }
+
+.alerts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  margin-top: var(--gap);
+}
+.alerts:empty { display: none; }
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--row-bg);
+  border: 1px solid var(--row-bd);
+  border-left: 4px solid #f87171;
+  border-radius: 12px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.alert.planned { border-left-color: #facc15; }
+.alert-type {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fca5a5;
+  padding-top: 2px;
+}
+.alert.planned .alert-type { color: #fde68a; }
+.alert-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.alert-text .chip-route { margin: 0 2px; font-size: 0.75em; vertical-align: 1px; }
+
 .chip.now  { background: rgba(74,222,128,0.22); color: #86efac; }
 .chip.soon { background: rgba(250,204,21,0.22);  color: #fde68a; }
 
@@ -360,6 +413,7 @@ html, body {
     <section class="section">
       <div class="sec-label">Subway · Utica Av (A/C/3/4) · Near 1485 Prospect Pl</div>
       <div class="rows" id="subway-rows"></div>
+      <div class="alerts" id="subway-alerts"></div>
     </section>
 
     <section class="section" id="bus-section">
@@ -467,6 +521,7 @@ const dotEl = document.getElementById('dot');
 const stxtEl = document.getElementById('stxt');
 const verEl = document.getElementById('ver');
 const subwayRowsEl = document.getElementById('subway-rows');
+const subwayAlertsEl = document.getElementById('subway-alerts');
 const busRowsEl = document.getElementById('bus-rows');
 
 document.getElementById('bus-section').hidden = !SHOW_BUSES;
@@ -486,6 +541,7 @@ const chipCls = label => label === 'Now'
 
 let maxArrivals = 2;
 let lastSubwayData = null;
+let lastAlerts = [];
 let lastBusData = [];
 let rowLayoutRaf = null;
 const INLINE_FIT_RATIO = 0.82;
@@ -498,6 +554,12 @@ function chipsCol(labels) {
 const routeColors = route => LINE_COLORS[route] || { bg: '#555', fg: '#fff' };
 
 // trains: [{ route, delta }] sorted soonest first
+// Most important alert touching any of the row's routes (live before planned)
+function alertTag(routes) {
+  const alert = lastAlerts.find(a => a.routes.some(r => routes.includes(r)));
+  return alert ? `<span class="row-alert${alert.planned ? ' planned' : ''}">⚠ ${alert.type}</span>` : '';
+}
+
 function subwayRow(routes, dir, dest, trains) {
   const colors = routeColors(trains[0]?.route || routes[0]);
   const chips = trains.length
@@ -511,13 +573,13 @@ function subwayRow(routes, dir, dest, trains) {
     : '<div class="chips"><div class="chip">—</div></div>';
   return `<div class="row">
     <div class="dest dest-top">
-      <div class="dest-dir">${dir}</div>
+      <div class="dest-dir">${dir}${alertTag(routes)}</div>
       <div class="dest-name">${dest}</div>
     </div>
     <div class="row-rail">
       <div class="bullet" style="background:${colors.bg};color:${colors.fg}">${routes.join('/')}</div>
       <div class="dest-inline">
-        <div class="dest-dir">${dir}</div>
+        <div class="dest-dir">${dir}${alertTag(routes)}</div>
         <div class="dest-name">${dest}</div>
       </div>
       ${chips}
@@ -578,6 +640,32 @@ async function getSubway() {
   const response = await fetch(`${API_BASE}/api/subway?ids=${ids}&routes=${routes}`);
   if (!response.ok) throw new Error(`subway ${response.status}`);
   return response.json();
+}
+
+async function getAlerts() {
+  const routes = [...new Set(SUBWAY_GROUPS.flatMap(group => group.routes))].join(',');
+  const stops = [...new Set(SUBWAY_GROUPS.map(group => group.stopId.slice(0, -1)))].join(',');
+  const response = await fetch(`${API_BASE}/api/alerts?routes=${routes}&stops=${stops}`);
+  if (!response.ok) throw new Error(`alerts ${response.status}`);
+  return (await response.json()).alerts || [];
+}
+
+const escapeHtml = text => text.replace(/[&<>"']/g, ch =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]);
+
+// Turn "[A]" route tokens in alert text into mini bullets
+function alertHtml(text) {
+  return escapeHtml(text.replace(/\s+/g, ' ').replace(/ ([.,])/g, '$1')).replace(/\[([A-Z0-9]{1,2})\]/g, (_, route) => {
+    const c = routeColors(route);
+    return `<span class="chip-route" style="background:${c.bg};color:${c.fg}">${route}</span>`;
+  });
+}
+
+function renderAlerts() {
+  subwayAlertsEl.innerHTML = lastAlerts.map(alert => `<div class="alert${alert.planned ? ' planned' : ''}">
+    <div class="alert-type">${escapeHtml(alert.type)}</div>
+    <div class="alert-text">${alertHtml(alert.header)}</div>
+  </div>`).join('');
 }
 
 async function getBus(stop) {
@@ -654,6 +742,7 @@ function renderBus(allData) {
 
 function renderCachedData() {
   if (lastSubwayData) renderSubway(lastSubwayData);
+  renderAlerts();
 
   if (!SHOW_BUSES) {
     // bus section hidden
@@ -674,12 +763,14 @@ function setStatus(state, message) {
 async function refresh() {
   setStatus('loading', 'Refreshing…');
   try {
-    const [subwayData, ...busResults] = await Promise.all([
+    const [subwayData, alerts, ...busResults] = await Promise.all([
       getSubway(),
+      getAlerts().catch(() => null),
       ...(SHOW_BUSES ? BUS_STOPS : []).map(stop => getBus(stop).catch(() => null)),
     ]);
 
     lastSubwayData = subwayData;
+    if (alerts) lastAlerts = alerts;
     lastBusData = busResults.filter(Boolean);
 
     renderCachedData();

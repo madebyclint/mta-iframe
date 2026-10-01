@@ -105,6 +105,70 @@ app.get('/api/subway', async (req, res) => {
   }
 });
 
+const ALERTS_URL = 'https://api-endpoint.mta.info/Dataservice/mtagtfsfeeds/camsys%2Fsubway-alerts.json';
+const IGNORED_ALERT_TYPES = new Set(['Extra Service']);
+const ALERT_SEVERITY = ['Suspended', 'Part Suspended', 'Delays', 'Expect Delays', 'Reduced Service', 'Stops Skipped'];
+
+// Subway alerts: active alerts for the requested routes. Live alerts (delays,
+// suspensions) apply route-wide; planned work only counts if it names one of
+// the requested stops.
+app.get('/api/alerts', async (req, res) => {
+  const { routes, stops } = req.query;
+  if (!routes || !/^[A-Z0-9,]+$/i.test(routes)) return res.status(400).json({ error: 'invalid routes' });
+  if (stops && !/^[A-Z0-9,]+$/i.test(stops)) return res.status(400).json({ error: 'invalid stops' });
+
+  const routeSet = new Set(routes.toUpperCase().split(',').filter(Boolean));
+  const stopList = (stops || '').toUpperCase().split(',').filter(Boolean);
+  const matchesStop = stopId => stopList.some(stop => (stopId || '').toUpperCase().startsWith(stop));
+
+  try {
+    const r = await fetch(ALERTS_URL);
+    if (!r.ok) throw new Error(`alerts ${r.status}`);
+    const feed = await r.json();
+    const now = Date.now() / 1000;
+
+    // Same alert is often repeated once per route; merge by header text
+    const byHeader = new Map();
+    for (const entity of feed.entity || []) {
+      const alert = entity.alert;
+      if (!alert) continue;
+
+      const type = alert['transit_realtime.mercury_alert']?.alert_type || 'Alert';
+      if (IGNORED_ALERT_TYPES.has(type)) continue;
+
+      const active = (alert.active_period || []).some(p =>
+        Number(p.start || 0) <= now && (!Number(p.end) || Number(p.end) >= now));
+      if (!active) continue;
+
+      const informed = alert.informed_entity || [];
+      const alertRoutes = [...new Set(informed.map(i => i.route_id).filter(r => routeSet.has(r)))];
+      if (!alertRoutes.length) continue;
+      if (type.startsWith('Planned') && !informed.some(i => matchesStop(i.stop_id))) continue;
+
+      const header = alert.header_text?.translation?.find(t => t.language === 'en')?.text?.trim();
+      if (!header) continue;
+
+      const existing = byHeader.get(header);
+      if (existing) {
+        existing.routes = [...new Set([...existing.routes, ...alertRoutes])];
+      } else {
+        byHeader.set(header, { id: entity.id, type, planned: type.startsWith('Planned'), routes: alertRoutes, header });
+      }
+    }
+
+    // Most disruptive first; planned work after live alerts
+    const rank = a => {
+      const i = ALERT_SEVERITY.indexOf(a.type);
+      return (a.planned ? 100 : 0) + (i === -1 ? ALERT_SEVERITY.length : i);
+    };
+    const alerts = [...byHeader.values()].sort((a, b) => rank(a) - rank(b));
+    res.json({ alerts });
+  } catch (e) {
+    console.error('alerts fetch error:', e.message);
+    res.status(502).json({ error: 'upstream error' });
+  }
+});
+
 // Proxy: BusTime SIRI API (requires BUS_API_KEY env var)
 app.get('/api/bus/:code', async (req, res) => {
   const code = req.params.code;
